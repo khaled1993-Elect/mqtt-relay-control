@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Relay Control</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    button {
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 20px;
+    }
+    #status {
+      font-size: 18px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>ESP32 Relay Control (Public Broker)</h2>
+
+  <button id="connectBtn" onclick="connect()">Connect</button>
+  <button id="onBtn" onclick="sendOn()" disabled>ON</button>
+  <button id="offBtn" onclick="sendOff()" disabled>OFF</button>
+
+  <p id="status">Status: Not connected</p>
+
+  <script>
+    const broker = 'wss://test.mosquitto.org:8081';
+    const topic = 'khaled/relay/control';
+
+    let client;
+
+    function connect() {
+      client = mqtt.connect(broker);
+
+      client.on('connect', () => {
+        console.log('Connected');
+        document.getElementById('status').innerText = 'Status: Connected!';
+        document.getElementById('onBtn').disabled = false;
+        document.getElementById('offBtn').disabled = false;
+        document.getElementById('connectBtn').disabled = true;
+      });
+
+      client.on('error', (err) => {
+        console.log('Connection error:', err);
+        document.getElementById('status').innerText = 'Status: Error connecting';
+      });
+
+      client.on('close', () => {
+        console.log('Disconnected');
+        document.getElementById('status').innerText = 'Status: Disconnected';
+        document.getElementById('onBtn').disabled = true;
+        document.getElementById('offBtn').disabled = true;
+        document.getElementById('connectBtn').disabled = false;
+      });
+    }
+
+    function sendOn() {
+      if (client && client.connected) {
+        client.publish(topic, 'ON');
+        document.getElementById('status').innerText = 'Sent: ON';
+        console.log('Sent ON');
+      }
+    }
+
+    function sendOff() {
+      if (client && client.connected) {
+        client.publish(topic, 'OFF');
+        document.getElementById('status').innerText = 'Sent: OFF';
+        console.log('Sent OFF');
+      }
+    }
+  </script>
+</body>
+</html>
