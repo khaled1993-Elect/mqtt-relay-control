@@ -14,7 +14,8 @@ const char* token = "abc123xyz789";  // Must match HTML!
 
 // === Topics ===
 String topic_controls[8];
-String topic_status = String(token) + "/status";
+String topic_status[8];
+String topic_hello = String(token) + "/status/hello";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -40,6 +41,13 @@ void setup_wifi() {
   Serial.println("✅ WiFi connected");
 }
 
+void publishRelayStatus(int i) {
+  String topic = topic_status[i];
+  String msg = digitalRead(relayPins[i]) ? "ON" : "OFF";
+  client.publish(topic.c_str(), msg.c_str(), true);  // retained
+  Serial.printf("Published Relay %d status: %s\n", i+1, msg.c_str());
+}
+
 void callback(char* topic, byte* payload, unsigned int length) {
   String msg;
   for (unsigned int i = 0; i < length; i++) {
@@ -60,6 +68,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
         digitalWrite(relayPins[i], LOW);
         Serial.printf("Relay %d OFF\n", i+1);
       }
+      publishRelayStatus(i);  // send updated status
     }
   }
 }
@@ -78,9 +87,15 @@ void reconnect() {
         Serial.println(topic_controls[i]);
       }
 
-      client.publish(topic_status.c_str(), "HELLO", true);
+      // Publish hello retained for pairing
+      client.publish(topic_hello.c_str(), "HELLO", true);
       Serial.print("Published retained HELLO on: ");
-      Serial.println(topic_status);
+      Serial.println(topic_hello);
+
+      // Publish current status for each relay
+      for (int i = 0; i < 8; i++) {
+        publishRelayStatus(i);
+      }
 
     } else {
       Serial.print("failed, rc=");
@@ -92,19 +107,18 @@ void reconnect() {
 }
 
 void setup() {
-  Serial.begin(115200);   // ✅ Serial FIRST!
-  setup_wifi();           // ✅ Then connect Wi-Fi
+  Serial.begin(115200);
+  setup_wifi();
   randomSeed(micros());
 
-  // Build topics
   for (int i = 0; i < 8; i++) {
     topic_controls[i] = String(token) + "/control/" + String(i+1);
+    topic_status[i] = String(token) + "/status/" + String(i+1);
   }
 
-  // Configure relay pins
   for (int i = 0; i < 8; i++) {
     pinMode(relayPins[i], OUTPUT);
-    digitalWrite(relayPins[i], LOW);
+    digitalWrite(relayPins[i], LOW);  // start OFF
   }
 
   client.setServer(mqtt_server, mqtt_port);
