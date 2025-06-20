@@ -6,14 +6,15 @@
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       background: #f0f2f5;
       color: #333;
       display: flex;
       flex-direction: column;
-      height: 100vh;
     }
 
     header {
@@ -33,6 +34,22 @@
       font-size: 16px;
     }
 
+    .dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-left: 8px;
+    }
+
+    .dot.connected {
+      background: #28a745;
+    }
+
+    .dot.disconnected {
+      background: #dc3545;
+    }
+
     main {
       flex: 1;
       display: flex;
@@ -44,12 +61,13 @@
     #temperature {
       font-size: 28px;
       color: #17a2b8;
+      margin-bottom: 40px;
     }
 
     footer {
       background: #fff;
       border-top: 1px solid #ddd;
-      padding: 30px 20px;
+      padding: 20px;
       text-align: center;
     }
 
@@ -93,28 +111,12 @@
       transform: translateX(40px);
     }
 
-    .dot {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      margin-left: 8px;
-    }
-
-    .dot.connected {
-      background: #28a745;
-    }
-
-    .dot.disconnected {
-      background: #dc3545;
-    }
-
   </style>
 </head>
 <body>
   <header>
     <h1>Smart Switch</h1>
-    <div id="status">Status: <span id="status-text">Disconnected</span>
+    <div id="status">Status: <span id="status-text">Connecting...</span>
       <span class="dot disconnected" id="status-dot"></span>
     </div>
   </header>
@@ -128,9 +130,6 @@
       <input type="checkbox" id="relaySwitch" disabled>
       <span class="slider"></span>
     </label>
-    <div style="margin-top: 10px;">
-      <button id="connectBtn" onclick="connect()" style="margin-top:20px; padding:10px 20px; font-size:16px;">Connect</button>
-    </div>
   </footer>
 
   <script>
@@ -147,7 +146,6 @@
         console.log('Connected');
         updateStatus(true);
         document.getElementById('relaySwitch').disabled = false;
-        document.getElementById('connectBtn').disabled = true;
 
         client.subscribe(topicTemp);
       });
@@ -168,7 +166,6 @@
         console.log('Disconnected');
         updateStatus(false);
         document.getElementById('relaySwitch').disabled = true;
-        document.getElementById('connectBtn').disabled = false;
       });
     }
 
@@ -195,6 +192,8 @@
       }
     });
 
+    // ✅ Connect automatically when page loads
+    window.onload = connect;
   </script>
 </body>
 </html>
