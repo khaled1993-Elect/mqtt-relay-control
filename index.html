@@ -2,164 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>8-Relay Industrial Panel</title>
+  <title>Smart Relay — Refined Icons</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #1e1e1e;
-      color: #eee;
+      margin: 0; padding: 0; height: 100%;
+      background: #1e1e1e; color: #eee;
       font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
     }
-
     header {
-      background: #333;
-      padding: 20px;
-      text-align: center;
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    #status-dot {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      margin-left: 10px;
-    }
-
-    #pairing {
-      text-align: center;
-      margin: auto;
-    }
-
-    #pairing input {
-      padding: 10px;
-      font-size: 18px;
-      width: 250px;
-      margin-bottom: 10px;
-    }
-
-    #pairing button {
-      padding: 10px 20px;
-      font-size: 18px;
-      margin-left: 10px;
-    }
-
-    #pairMessage {
-      color: #ff4d4d;
-      margin-top: 10px;
-    }
-
-    main {
-      flex: 1;
-      display: none;
-      padding: 20px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 30px;
-      justify-items: center;
-      margin-bottom: 20px;
-    }
-
-    .breaker-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .breaker-card .name,
-    .breaker-card .name-input {
-      margin-bottom: 8px;
-      font-size: 15px;
-      font-weight: bold;
-      color: #ccc; /* ✅ FINAL: clean gray */
-    }
-
-    .breaker-card .name-input {
-      width: 90px;
-      text-align: center;
-    }
-
-    .breaker {
+      background: #333; padding: 20px;
+      text-align: center; font-size: 22px; font-weight: bold;
       position: relative;
-      width: 80px;
-      height: 100px;
-      background: #222;
-      border-radius: 10px;
-      box-shadow: inset 0 0 8px #000;
-      cursor: pointer;
-      user-select: none;
     }
-
+    #status-dot {
+      display: inline-block; width: 14px; height: 14px;
+      border-radius: 50%; margin-left: 10px;
+    }
+    #editBtn {
+      position: absolute; right: 20px; top: 20px;
+      background: transparent; border: none;
+      color: #aaa; font-size: 22px; cursor: pointer; display: none;
+    }
+    #pairing { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+    main, .page { flex: 1; padding: 20px; display: none; }
+    main.active, .page.active { display: block; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 30px; justify-items: center; margin-bottom: 20px; }
+    .breaker-card { display: flex; flex-direction: column; align-items: center; }
+    .breaker-card .name, .breaker-card .name-input {
+      margin-bottom: 8px; font-size: 15px; font-weight: bold; color: #ccc;
+    }
+    .breaker-card .name-input { width: 90px; text-align: center; }
+    .breaker { position: relative; width: 80px; height: 100px; background: #222; border-radius: 10px; box-shadow: inset 0 0 8px #000; cursor: pointer; user-select: none; }
     .breaker .handle {
-      position: absolute;
-      width: 60px;
-      height: 30px;
-      background: #999;
-      border-radius: 6px;
-      left: 10px;
-      bottom: 10px;
+      position: absolute; width: 60px; height: 30px; background: #999;
+      border-radius: 6px; left: 10px; bottom: 10px;
       transition: bottom 0.25s ease, background 0.25s ease;
       box-shadow: 0 3px 6px rgba(0,0,0,0.5);
-      text-align: center;
-      line-height: 30px;
-      font-weight: bold;
-      color: #111;
+      text-align: center; line-height: 30px; font-weight: bold; color: #111;
     }
+    .breaker.on .handle { bottom: 60px; background: #4caf50; color: #fff; }
+    .breaker .label { position: absolute; width: 100%; text-align: center; font-size: 14px; color: #ccc; pointer-events: none; }
+    .breaker .label.on { top: 6px; }
+    .breaker .label.off { bottom: 6px; }
 
-    .breaker.on .handle {
-      bottom: 60px;
-      background: #4caf50;
-      color: #fff;
-    }
-
-    .breaker .label {
-      position: absolute;
-      width: 100%;
-      text-align: center;
-      font-size: 14px;
-      color: #ccc;
-      pointer-events: none;
-    }
-
-    .breaker .label.on {
-      top: 6px;
-    }
-
-    .breaker .label.off {
-      bottom: 6px;
-    }
-
-    footer {
-      background: #333;
-      padding: 15px;
-      text-align: center;
-    }
-
+    footer { background: #333; padding: 10px; text-align: center; }
     footer button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
+      margin: 0 10px; padding: 10px; border: none;
+      background: transparent; color: #aaa; border-radius: 8px;
+      width: 60px; height: 60px; display: inline-flex; flex-direction: column;
+      align-items: center; justify-content: center;
     }
+    footer button svg { width: 24px; height: 24px; fill: #aaa; }
+    footer button span { font-size: 11px; margin-top: 4px; }
+    footer button:hover svg { fill: #eee; }
 
-    main.active {
-      display: block;
+    .schedule-form { max-width: 400px; margin: 0 auto; text-align: left; }
+    .schedule-form label { display: block; margin: 10px 0 5px; }
+    .schedule-list { margin-top: 20px; max-width: 400px; margin-left: auto; margin-right: auto; }
+    .schedule-item {
+      background: #2a2a2a; padding: 10px; border-radius: 6px; margin-bottom: 5px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .schedule-item button {
+      background: transparent; border: none; color: #ccc; cursor: pointer;
     }
   </style>
 </head>
 <body>
   <header>
-    8-Relay Industrial Panel
+    Smart Relay Panel
     <span id="status-dot" style="background: red;"></span>
+    <button id="editBtn" onclick="toggleEdit()">✏️</button>
   </header>
 
   <div id="pairing">
@@ -169,179 +85,147 @@
     <p id="pairMessage"></p>
   </div>
 
-  <main>
-    <div class="grid" id="breakerGrid"></div>
-  </main>
+  <main id="panelPage"><div class="grid" id="breakerGrid"></div></main>
+
+  <div class="page" id="schedulePage">
+    <h2>Scheduler</h2>
+    <div class="schedule-form">
+      <label>Relay:
+        <select id="scheduleRelay">
+          <option value="0">Relay 1</option>
+          <option value="1">Relay 2</option>
+          <option value="2">Relay 3</option>
+          <option value="3">Relay 4</option>
+          <option value="4">Relay 5</option>
+          <option value="5">Relay 6</option>
+          <option value="6">Relay 7</option>
+          <option value="7">Relay 8</option>
+        </select>
+      </label>
+      <label>Action:
+        <select id="scheduleAction"><option>ON</option><option>OFF</option></select>
+      </label>
+      <label>When:
+        <input type="datetime-local" id="scheduleDatetime">
+      </label>
+      <button onclick="addSchedule()">Add Schedule</button>
+    </div>
+    <div class="schedule-list" id="scheduleList"></div>
+  </div>
+
+  <div class="page" id="scenePage">
+    <h2>Scenes (Scenarios)</h2>
+    <p>Combine multiple actions into one scenario — coming soon!</p>
+  </div>
 
   <footer>
-    <button id="editBtn" onclick="toggleEdit()">Edit Labels</button>
+    <button onclick="showPage('panelPage')">
+      <!-- Home Icon -->
+      <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V21H3V9.5z"/></svg><span>Home</span>
+    </button>
+    <button onclick="showPage('schedulePage')">
+      <!-- Clock Icon -->
+      <svg viewBox="0 0 24 24"><path d="M12 1a11 11 0 1 1 0 22A11 11 0 0 1 12 1zm0 2a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm-.5 4h1v6l5 3-.5.9L11.5 14V7z"/></svg><span>Scheduler</span>
+    </button>
+    <button onclick="showPage('scenePage')">
+      <!-- Layers Icon -->
+      <svg viewBox="0 0 24 24"><path d="M12 2 1 7l11 5 9-4.09V17l-9 4-9-4V8.91L12 13l9-4-9-7z"/></svg><span>Scene</span>
+    </button>
   </footer>
 
   <script>
     const broker = 'wss://test.mosquitto.org:8081';
-    let token = '';
-    let controlTopics = [];
-    let statusTopics = [];
-    let topicHello = '';
-    let client;
-    let helloReceived = false;
-    let helloTimeout;
-    let relayNamesKey = '';
-    let relayNames = [];
-    let isEditing = false;
+    let token = '', controlTopics = [], statusTopics = [], topicHello = '';
+    let client, helloReceived = false, helloTimeout, relayNamesKey = '', relayNames = [], isEditing = false, schedules = [];
 
     function pair() {
       token = document.getElementById('tokenInput').value.trim();
       const msg = document.getElementById('pairMessage');
-
-      if (token === '') {
-        msg.innerText = 'Please enter a valid token.';
-        return;
-      }
-
-      controlTopics = Array.from({length:8}, (_, i) => `${token}/control/${i+1}`);
-      statusTopics = Array.from({length:8}, (_, i) => `${token}/status/${i+1}`);
-      topicHello = `${token}/status/hello`;
-      relayNamesKey = `${token}_relay_names`;
-
-      msg.innerText = 'Connecting...';
-
+      if (!token) return msg.innerText = 'Please enter a valid token.';
+      controlTopics = Array.from({length:8}, (_,i)=>`${token}/control/${i+1}`);
+      statusTopics = Array.from({length:8}, (_,i)=>`${token}/status/${i+1}`);
+      topicHello = `${token}/status/hello`; relayNamesKey = `${token}_relay_names`; msg.innerText = 'Connecting...';
       client = mqtt.connect(broker);
-
       client.on('connect', () => {
-        console.log('Connected to broker');
         updateStatus(true);
-        client.subscribe(topicHello, (err) => {
-          if (!err) {
-            helloTimeout = setTimeout(() => {
-              if (!helloReceived) {
-                msg.innerText = 'No response. Device not found or token invalid.';
-                client.end();
-                updateStatus(false);
-              }
-            }, 5000);
-          } else {
-            msg.innerText = 'Failed to subscribe to hello.';
-          }
+        client.subscribe(topicHello, err => {
+          if (!err) helloTimeout = setTimeout(() => {
+            if (!helloReceived) {
+              msg.innerText = 'No response. Check token.';
+              client.end(); updateStatus(false);
+            }
+          }, 5000);
         });
       });
-
       client.on('message', (topic, message) => {
-        if (topic === topicHello) {
-          if (message.toString() === "HELLO") {
-            helloReceived = true;
-            clearTimeout(helloTimeout);
-            msg.innerText = '';
-
-            buildGrid();
-            document.getElementById('pairing').style.display = 'none';
-            document.querySelector('main').classList.add('active');
-
-            // Subscribe to relay statuses
-            statusTopics.forEach(t => client.subscribe(t));
-          }
+        if (topic === topicHello && message.toString() === "HELLO") {
+          helloReceived = true; clearTimeout(helloTimeout); msg.innerText = '';
+          buildGrid(); document.getElementById('pairing').style.display = 'none'; showPage('panelPage');
+          statusTopics.forEach(t=>client.subscribe(t));
         } else if (statusTopics.includes(topic)) {
-          const index = statusTopics.indexOf(topic);
-          const breaker = document.querySelector(`.breaker[data-index="${index}"]`);
-          if (breaker) {
-            if (message.toString() === "ON") {
-              breaker.classList.add('on');
-              breaker.querySelector('.handle').textContent = "ON";
-            } else {
-              breaker.classList.remove('on');
-              breaker.querySelector('.handle').textContent = "OFF";
-            }
+          const i = statusTopics.indexOf(topic), b = document.querySelector(`.breaker[data-index="${i}"]`);
+          if (b) {
+            const on = message.toString() === "ON";
+            b.classList.toggle('on', on);
+            b.querySelector('.handle').textContent = on ? "ON" : "OFF";
           }
         }
       });
-
-      client.on('error', (err) => {
-        console.log('Connection error:', err);
-        updateStatus(false);
-        msg.innerText = 'Connection error. Check your token.';
-      });
-
-      client.on('close', () => {
-        console.log('Disconnected');
-        updateStatus(false);
-      });
+      client.on('error', () => { updateStatus(false); msg.innerText = 'Connection error.'; });
+      client.on('close', () => updateStatus(false));
     }
-
-    function updateStatus(connected) {
-      document.getElementById('status-dot').style.background = connected ? '#28a745' : 'red';
-    }
+    function updateStatus(c) { document.getElementById('status-dot').style.background = c ? '#28a745' : 'red'; }
 
     function buildGrid() {
-      const grid = document.getElementById('breakerGrid');
-      grid.innerHTML = '';
-
+      const g = document.getElementById('breakerGrid'); g.innerHTML = '';
       relayNames = JSON.parse(localStorage.getItem(relayNamesKey)) || [];
-
-      for (let index = 0; index < controlTopics.length; index++) {
-        const topic = controlTopics[index];
-        const card = document.createElement('div');
-        card.className = 'breaker-card';
-
-        const nameLabel = document.createElement('div');
-        nameLabel.className = 'name';
-        nameLabel.textContent = relayNames[index] || `Relay ${index+1}`;
-
-        const nameInput = document.createElement('input');
-        nameInput.className = 'name-input';
-        nameInput.value = relayNames[index] || `Relay ${index+1}`;
-        nameInput.style.display = 'none';
-
-        const breaker = document.createElement('div');
-        breaker.className = 'breaker';
-        breaker.dataset.topic = topic;
-        breaker.dataset.index = index;
-
-        breaker.innerHTML = `
-          <div class="label on">ON</div>
-          <div class="label off">OFF</div>
-          <div class="handle">OFF</div>
-        `;
-
-        breaker.addEventListener('click', () => {
-          if (client && client.connected && !isEditing) {
-            const isOn = breaker.classList.toggle('on');
-            const msg = isOn ? 'ON' : 'OFF';
-            breaker.querySelector('.handle').textContent = msg;
-            client.publish(topic, msg);
-            console.log(`Relay ${index+1} command: ${msg}`);
-          }
-        });
-
-        card.appendChild(nameLabel);
-        card.appendChild(nameInput);
-        card.appendChild(breaker);
-        grid.appendChild(card);
+      for (let i = 0; i < 8; i++) {
+        const t = controlTopics[i], c = document.createElement('div'); c.className = 'breaker-card';
+        const l = document.createElement('div'); l.className = 'name'; l.textContent = relayNames[i] || `Relay ${i+1}`;
+        const inp = document.createElement('input'); inp.className = 'name-input'; inp.value = relayNames[i] || `Relay ${i+1}`; inp.style.display = 'none';
+        const b = document.createElement('div'); b.className = 'breaker'; b.dataset.topic = t; b.dataset.index = i;
+        b.innerHTML = `<div class="label on">ON</div><div class="label off">OFF</div><div class="handle">OFF</div>`;
+        b.onclick = () => { if (client && client.connected && !isEditing) client.publish(t, b.classList.contains('on') ? "OFF" : "ON"); };
+        c.appendChild(l); c.appendChild(inp); c.appendChild(b); g.appendChild(c);
       }
     }
 
     function toggleEdit() {
       isEditing = !isEditing;
-      document.getElementById('editBtn').textContent = isEditing ? "Save Labels" : "Edit Labels";
-
-      document.querySelectorAll('.breaker-card').forEach((card, i) => {
-        const label = card.querySelector('.name');
-        const input = card.querySelector('.name-input');
-        if (isEditing) {
-          label.style.display = 'none';
-          input.style.display = 'block';
-        } else {
-          const newName = input.value.trim() || `Relay ${i+1}`;
-          label.textContent = newName;
-          input.value = newName;
-          label.style.display = 'block';
-          input.style.display = 'none';
-          relayNames[i] = newName;
+      document.getElementById('editBtn').textContent = isEditing ? "✔" : "✏️";
+      document.querySelectorAll('.breaker-card').forEach((c,i)=>{
+        const l = c.querySelector('.name'), inp = c.querySelector('.name-input');
+        if (isEditing) { l.style.display = 'none'; inp.style.display = 'block'; }
+        else {
+          const n = inp.value.trim() || `Relay ${i+1}`;
+          l.textContent = n; inp.value = n; l.style.display = 'block'; inp.style.display = 'none'; relayNames[i] = n;
         }
       });
+      if (!isEditing) localStorage.setItem(relayNamesKey, JSON.stringify(relayNames));
+    }
 
-      if (!isEditing) {
-        localStorage.setItem(relayNamesKey, JSON.stringify(relayNames));
-      }
+    function showPage(id) {
+      document.querySelectorAll('main,.page').forEach(p=>p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.getElementById('editBtn').style.display = (id==='panelPage') ? 'block' : 'none';
+    }
+
+    function addSchedule() {
+      const r = document.getElementById('scheduleRelay').value, a = document.getElementById('scheduleAction').value, d = new Date(document.getElementById('scheduleDatetime').value), now = new Date(), diff = d - now;
+      if (isNaN(d) || diff<1000) return alert("Invalid time");
+      const id = Date.now(), t = setTimeout(() => {
+        client.publish(controlTopics[r], a); schedules = schedules.filter(s => s.id !== id); renderSchedules();
+      }, diff);
+      schedules.push({id, relay:r, action:a, datetime:d, timeout:t}); renderSchedules();
+    }
+    function renderSchedules() {
+      const l = document.getElementById('scheduleList'); l.innerHTML = '';
+      schedules.forEach(s => {
+        const d = new Date(s.datetime), i = document.createElement('div');
+        i.className = 'schedule-item'; i.textContent = `Relay ${parseInt(s.relay)+1} → ${s.action} at ${d.toLocaleString()}`;
+        const del = document.createElement('button'); del.textContent = '✖'; del.onclick = () => { clearTimeout(s.timeout); schedules = schedules.filter(x=>x.id!==s.id); renderSchedules(); };
+        i.appendChild(del); l.appendChild(i);
+      });
     }
   </script>
 </body>
