@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Compact Industrial Breaker Panel</title>
+  <title>8-Relay Panel with Status</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
@@ -58,49 +58,24 @@
 
     main {
       flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
       display: none;
+      padding: 20px;
     }
 
-    .card {
-      background: #2c2c2c;
-      border-radius: 8px;
-      padding: 30px;
-      margin: 20px;
-      text-align: center;
-      min-width: 200px;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 20px;
+      justify-items: center;
     }
 
-    .card h2 {
-      margin: 0 0 10px 0;
-      font-size: 24px;
-    }
-
-    .card p {
-      font-size: 28px;
-      margin: 0;
-      color: #4db8ff;
-    }
-
-    footer {
-      background: #333;
-      padding: 30px 20px;
-      text-align: center;
-      display: none;
-    }
-
-    /* === COMPACT BREAKER === */
     .breaker {
       position: relative;
       width: 80px;
-      height: 100px; /* Reduced height */
+      height: 100px;
       background: #222;
       border-radius: 10px;
       box-shadow: inset 0 0 8px #000;
-      margin: 20px auto;
       cursor: pointer;
       user-select: none;
     }
@@ -122,7 +97,7 @@
     }
 
     .breaker.on .handle {
-      bottom: 60px; /* Compact UP travel */
+      bottom: 60px;
       background: #4caf50;
       color: #fff;
     }
@@ -144,15 +119,20 @@
       bottom: 6px;
     }
 
-    main.active, footer.active {
-      display: block;
+    footer {
+      background: #333;
+      padding: 15px;
+      text-align: center;
     }
 
+    main.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
   <header>
-    Compact Industrial Breaker Panel
+    8-Relay Panel with Real Status
     <span id="status-dot" style="background: red;"></span>
   </header>
 
@@ -164,31 +144,25 @@
   </div>
 
   <main>
-    <div class="card">
-      <h2>Temperature</h2>
-      <p id="temperature">-- °C</p>
-    </div>
+    <div class="grid" id="breakerGrid"></div>
   </main>
 
   <footer>
-    <div class="breaker" id="breakerSwitch">
-      <div class="label on">ON</div>
-      <div class="label off">OFF</div>
-      <div class="handle">OFF</div>
-    </div>
+    Real-time relay status tracking
   </footer>
 
   <script>
     const broker = 'wss://test.mosquitto.org:8081';
-    let topicControl = '';
-    let topicTemp = '';
-    let topicStatus = '';
+    let token = '';
+    let controlTopics = [];
+    let statusTopics = [];
+    let topicHello = '';
     let client;
     let helloReceived = false;
     let helloTimeout;
 
     function pair() {
-      const token = document.getElementById('tokenInput').value.trim();
+      token = document.getElementById('tokenInput').value.trim();
       const msg = document.getElementById('pairMessage');
 
       if (token === '') {
@@ -196,9 +170,9 @@
         return;
       }
 
-      topicControl = `${token}/control`;
-      topicTemp = `${token}/temperature`;
-      topicStatus = `${token}/status`;
+      controlTopics = Array.from({length:8}, (_, i) => `${token}/control/${i+1}`);
+      statusTopics = Array.from({length:8}, (_, i) => `${token}/status/${i+1}`);
+      topicHello = `${token}/status/hello`;
       msg.innerText = 'Connecting...';
 
       client = mqtt.connect(broker);
@@ -206,7 +180,7 @@
       client.on('connect', () => {
         console.log('Connected to broker');
         updateStatus(true);
-        client.subscribe(topicStatus, (err) => {
+        client.subscribe(topicHello, (err) => {
           if (!err) {
             helloTimeout = setTimeout(() => {
               if (!helloReceived) {
@@ -216,27 +190,37 @@
               }
             }, 5000);
           } else {
-            msg.innerText = 'Failed to subscribe to status.';
+            msg.innerText = 'Failed to subscribe to hello.';
           }
         });
       });
 
       client.on('message', (topic, message) => {
-        if (topic === topicStatus) {
-          const msgValue = message.toString();
-          if (msgValue === "HELLO") {
+        if (topic === topicHello) {
+          if (message.toString() === "HELLO") {
             helloReceived = true;
             clearTimeout(helloTimeout);
-            console.log('Valid device found!');
             msg.innerText = '';
 
-            client.subscribe(topicTemp);
+            buildGrid();
             document.getElementById('pairing').style.display = 'none';
             document.querySelector('main').classList.add('active');
-            document.querySelector('footer').classList.add('active');
+
+            // Subscribe to relay statuses
+            statusTopics.forEach(t => client.subscribe(t));
           }
-        } else if (topic === topicTemp) {
-          document.getElementById('temperature').innerText = `${message} °C`;
+        } else if (statusTopics.includes(topic)) {
+          const index = statusTopics.indexOf(topic);
+          const breaker = document.querySelector(`.breaker[data-index="${index}"]`);
+          if (breaker) {
+            if (message.toString() === "ON") {
+              breaker.classList.add('on');
+              breaker.querySelector('.handle').textContent = "ON";
+            } else {
+              breaker.classList.remove('on');
+              breaker.querySelector('.handle').textContent = "OFF";
+            }
+          }
         }
       });
 
@@ -253,24 +237,38 @@
     }
 
     function updateStatus(connected) {
-      const dot = document.getElementById('status-dot');
-      dot.style.background = connected ? '#28a745' : 'red';
+      document.getElementById('status-dot').style.background = connected ? '#28a745' : 'red';
     }
 
-    // Breaker click handler
-    const breaker = document.getElementById('breakerSwitch');
-    const handle = breaker.querySelector('.handle');
+    function buildGrid() {
+      const grid = document.getElementById('breakerGrid');
+      grid.innerHTML = '';
 
-    breaker.addEventListener('click', function() {
-      if (client && client.connected) {
-        breaker.classList.toggle('on');
-        const isOn = breaker.classList.contains('on');
-        const msg = isOn ? 'ON' : 'OFF';
-        client.publish(topicControl, msg);
-        handle.textContent = msg;
-        console.log(`Sent: ${msg}`);
-      }
-    });
+      controlTopics.forEach((topic, index) => {
+        const breaker = document.createElement('div');
+        breaker.className = 'breaker';
+        breaker.dataset.topic = topic;
+        breaker.dataset.index = index;
+
+        breaker.innerHTML = `
+          <div class="label on">ON</div>
+          <div class="label off">OFF</div>
+          <div class="handle">OFF</div>
+        `;
+
+        breaker.addEventListener('click', () => {
+          if (client && client.connected) {
+            const isOn = breaker.classList.toggle('on');
+            const msg = isOn ? 'ON' : 'OFF';
+            breaker.querySelector('.handle').textContent = msg;
+            client.publish(topic, msg);
+            console.log(`Relay ${index+1} command: ${msg}`);
+          }
+        });
+
+        grid.appendChild(breaker);
+      });
+    }
   </script>
 </body>
 </html>
