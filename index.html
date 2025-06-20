@@ -1,37 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>ESP32 Relay Control</title>
+  <meta charset="UTF-8" />
+  <title>Smart Switch Control</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: #007BFF;
+      color: white;
+      padding: 20px;
       text-align: center;
-      margin-top: 50px;
     }
-    button {
-      padding: 15px 30px;
-      margin: 10px;
-      font-size: 20px;
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
     }
+
     #status {
-      font-size: 18px;
-      margin-top: 20px;
+      margin-top: 5px;
+      font-size: 16px;
     }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #temperature {
+      font-size: 28px;
+      color: #17a2b8;
+    }
+
+    footer {
+      background: #fff;
+      border-top: 1px solid #ddd;
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 80px;
+      height: 40px;
+    }
+
+    .toggle input {
+      display: none;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 32px;
+      width: 32px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #28a745;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(40px);
+    }
+
+    .dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-left: 8px;
+    }
+
+    .dot.connected {
+      background: #28a745;
+    }
+
+    .dot.disconnected {
+      background: #dc3545;
+    }
+
   </style>
 </head>
 <body>
-  <h2>ESP32 Relay Control (Public Broker)</h2>
+  <header>
+    <h1>Smart Switch</h1>
+    <div id="status">Status: <span id="status-text">Disconnected</span>
+      <span class="dot disconnected" id="status-dot"></span>
+    </div>
+  </header>
 
-  <button id="connectBtn" onclick="connect()">Connect</button>
-  <button id="onBtn" onclick="sendOn()" disabled>ON</button>
-  <button id="offBtn" onclick="sendOff()" disabled>OFF</button>
+  <main>
+    <div id="temperature">Temperature: -- °C</div>
+  </main>
 
-  <p id="status">Status: Not connected</p>
+  <footer>
+    <label class="toggle">
+      <input type="checkbox" id="relaySwitch" disabled>
+      <span class="slider"></span>
+    </label>
+    <div style="margin-top: 10px;">
+      <button id="connectBtn" onclick="connect()" style="margin-top:20px; padding:10px 20px; font-size:16px;">Connect</button>
+    </div>
+  </footer>
 
   <script>
     const broker = 'wss://test.mosquitto.org:8081';
-    const topic = 'khaled/relay/control';
+    const topicControl = 'khaled/relay/control';
+    const topicTemp = 'khaled/relay/temperature';
 
     let client;
 
@@ -40,41 +145,56 @@
 
       client.on('connect', () => {
         console.log('Connected');
-        document.getElementById('status').innerText = 'Status: Connected!';
-        document.getElementById('onBtn').disabled = false;
-        document.getElementById('offBtn').disabled = false;
+        updateStatus(true);
+        document.getElementById('relaySwitch').disabled = false;
         document.getElementById('connectBtn').disabled = true;
+
+        client.subscribe(topicTemp);
+      });
+
+      client.on('message', (topic, message) => {
+        if (topic === topicTemp) {
+          const temp = message.toString();
+          document.getElementById('temperature').innerText = `Temperature: ${temp} °C`;
+        }
       });
 
       client.on('error', (err) => {
         console.log('Connection error:', err);
-        document.getElementById('status').innerText = 'Status: Error connecting';
+        updateStatus(false);
       });
 
       client.on('close', () => {
         console.log('Disconnected');
-        document.getElementById('status').innerText = 'Status: Disconnected';
-        document.getElementById('onBtn').disabled = true;
-        document.getElementById('offBtn').disabled = true;
+        updateStatus(false);
+        document.getElementById('relaySwitch').disabled = true;
         document.getElementById('connectBtn').disabled = false;
       });
     }
 
-    function sendOn() {
-      if (client && client.connected) {
-        client.publish(topic, 'ON');
-        document.getElementById('status').innerText = 'Sent: ON';
-        console.log('Sent ON');
+    function updateStatus(connected) {
+      const statusText = document.getElementById('status-text');
+      const statusDot = document.getElementById('status-dot');
+
+      if (connected) {
+        statusText.innerText = 'Connected';
+        statusDot.classList.remove('disconnected');
+        statusDot.classList.add('connected');
+      } else {
+        statusText.innerText = 'Disconnected';
+        statusDot.classList.remove('connected');
+        statusDot.classList.add('disconnected');
       }
     }
 
-    function sendOff() {
+    document.getElementById('relaySwitch').addEventListener('change', function() {
       if (client && client.connected) {
-        client.publish(topic, 'OFF');
-        document.getElementById('status').innerText = 'Sent: OFF';
-        console.log('Sent OFF');
+        const msg = this.checked ? 'ON' : 'OFF';
+        client.publish(topicControl, msg);
+        console.log(`Sent: ${msg}`);
       }
-    }
+    });
+
   </script>
 </body>
 </html>
