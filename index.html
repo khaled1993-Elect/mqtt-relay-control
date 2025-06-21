@@ -42,13 +42,16 @@
     <button id="editBtn" onclick="toggleEdit()">✏️</button>
   </header>
 
-  <!-- Pairing -->
-  <div id="pairing">
-    <h2>Enter Device Token</h2>
+<!-- Pairing -->
+<div id="pairing">
+  <h2>Enter Device Token</h2>
+  <div id="pairForm">
     <input type="password" id="tokenInput" placeholder="Device Token" />
     <button onclick="pair()">Pair</button>
-    <p id="pairMessage"></p>
   </div>
+  <p id="pairMessage"></p>
+</div>
+
 
   <!-- Main -->
   <main id="panelPage"><div class="grid" id="breakerGrid"></div></main>
